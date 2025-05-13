@@ -86,7 +86,17 @@ else
     echo -e "${GREEN}✓ Using existing whisper.cpp repository${NC}"
     # Pull latest changes
     echo "Updating whisper.cpp repository..."
-    (cd whisper.cpp && git pull)
+    (
+        cd whisper.cpp 
+        # Check if we're in a detached HEAD state and handle it
+        if git symbolic-ref -q HEAD >/dev/null; then
+            # On a branch, just pull
+            git pull
+        else
+            echo "Whisper.cpp is in detached HEAD state. Checking out main branch first..."
+            git checkout main && git pull
+        fi
+    )
 fi
 
 # Build whisper.cpp
