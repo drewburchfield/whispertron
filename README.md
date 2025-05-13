@@ -101,7 +101,6 @@ cd whisper.cpp && ./models/download-ggml-model.sh MODEL_NAME
 2. For longer recordings, medium.en offers a good balance of speed and accuracy
 3. For critical transcriptions where accuracy is essential, use large-v3
 4. M1/M2/M3/M4 Macs provide significantly better performance than Intel-based Macs
-5. Ensure your Mac has adequate cooling for long transcription sessions
 
 ## 🗂️ Project Structure
 
