@@ -93,8 +93,8 @@ else
             # On a branch, just pull
             git pull
         else
-            echo "Whisper.cpp is in detached HEAD state. Checking out main branch first..."
-            git checkout main && git pull
+            echo "Whisper.cpp is in detached HEAD state. Checking out master branch first..."
+            git checkout master && git pull
         fi
     )
 fi
