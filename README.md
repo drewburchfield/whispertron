@@ -31,7 +31,7 @@ WhisperTron lets you transcribe voice memos, interviews, podcasts and more - all
 
 1. Clone this repository:
    ```bash
-   git clone --recurse-submodules https://github.com/your-username/whispertron.git
+   git clone --recurse-submodules https://github.com/drewburchfield/whispertron.git
    cd whispertron
    ```
 
