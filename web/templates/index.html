@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhisperTron Web - Audio Transcription</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.2/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .tab-nav {
+            display: flex;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 30px;
+        }
+
+        .tab-btn {
+            padding: 15px 25px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .drop-zone {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            background: #fafafa;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .drop-zone h3 {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .drop-zone p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .setting-group {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .setting-group h4 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+        }
+
+        .progress-section {
+            display: none;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+            animation: progress-animation 2s infinite;
+        }
+
+        @keyframes progress-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .log-area {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .results-section {
+            display: none;
+            background: #f0f8ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .download-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .download-btn {
+            background: #28a745;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            text-align: center;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .model-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #1565c0;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #c62828;
+        }
+
+        .success-message {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #2e7d32;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .about-content {
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .about-content h3 {
+            color: #333;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .feature-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .feature-card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎙️ WhisperTron Web</h1>
+            <p>Privacy-first audio transcription powered by OpenAI Whisper</p>
+        </div>
+
+        <div class="content">
+            <div class="tab-nav">
+                <button class="tab-btn active" onclick="showTab('transcribe')">Transcribe</button>
+                <button class="tab-btn" onclick="showTab('about')">About</button>
+            </div>
+
+            <!-- Transcribe Tab -->
+            <div id="transcribe-tab" class="tab-content active">
+                <div class="drop-zone" id="drop-zone">
+                    <h3>Drop Audio Files Here</h3>
+                    <p>or</p>
+                    <button class="btn" onclick="document.getElementById('file-input').click()">
+                        Browse Files
+                    </button>
+                    <input type="file" id="file-input" accept=".mp3,.wav,.m4a,.mp4,.mov,.ogg,.opus" onchange="handleFileSelect(event)">
+                </div>
+
+                <div class="settings-grid">
+                    <div class="setting-group">
+                        <h4>Model Selection</h4>
+                        <div class="form-group">
+                            <label for="model-select">Whisper Model:</label>
+                            <select id="model-select" class="form-control" onchange="updateModelInfo()">
+                                <option value="tiny.en">tiny.en (Fast, Basic Quality)</option>
+                                <option value="base.en">base.en (Balanced)</option>
+                                <option value="small.en">small.en (Good Quality)</option>
+                                <option value="medium.en">medium.en (High Quality)</option>
+                                <option value="large-v3">large-v3 (Best Quality)</option>
+                            </select>
+                        </div>
+                        <div class="model-info" id="model-info">
+                            Size: ~75MB | Speed: ⚡⚡⚡⚡⚡ | Accuracy: ⭐☆☆☆☆
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h4>Language</h4>
+                        <div class="form-group">
+                            <label for="language-select">Language:</label>
+                            <select id="language-select" class="form-control">
+                                <option value="auto">Auto Detect</option>
+                                <option value="en">English</option>
+                                <option value="es">Spanish</option>
+                                <option value="fr">French</option>
+                                <option value="de">German</option>
+                                <option value="zh">Chinese</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h4>Output Formats</h4>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="format-txt" value="txt" checked>
+                                <label for="format-txt">Text (.txt)</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="format-srt" value="srt" checked>
+                                <label for="format-srt">Subtitles (.srt)</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="format-vtt" value="vtt" checked>
+                                <label for="format-vtt">Web Subtitles (.vtt)</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h4>Performance</h4>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="use-coreml" checked>
+                            <label for="use-coreml">Use CoreML Acceleration</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="progress-section" id="progress-section">
+                    <h4>Transcription Progress</h4>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <div class="log-area" id="log-area"></div>
+                </div>
+
+                <div class="results-section" id="results-section">
+                    <h4>✅ Transcription Complete!</h4>
+                    <p>Your audio has been successfully transcribed. Download the files below:</p>
+                    <div class="download-grid" id="download-grid">
+                        <!-- Download links will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- About Tab -->
+            <div id="about-tab" class="tab-content">
+                <div class="about-content">
+                    <h3>🔒 Privacy-First Transcription</h3>
+                    <p>WhisperTron Web provides the same powerful audio transcription capabilities as the desktop app, but accessible through your web browser. All processing happens locally on the server - no data is sent to external services.</p>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h4>🚀 Fast Processing</h4>
+                            <p>Optimized for Apple Silicon with CoreML acceleration</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>📝 Multiple Formats</h4>
+                            <p>Export as text, SRT subtitles, or VTT web subtitles</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>🧠 Multiple Models</h4>
+                            <p>Choose from tiny.en to large-v3 based on your needs</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>🎵 Wide Support</h4>
+                            <p>Supports MP3, WAV, M4A, MP4, MOV, OGG, and OPUS</p>
+                        </div>
+                    </div>
+
+                    <h3>🎯 Model Guide</h3>
+                    <p><strong>tiny.en:</strong> Perfect for quick testing and short clips. Fastest processing but lowest accuracy.</p>
+                    <p><strong>base.en:</strong> Good for short voice memos and casual use.</p>
+                    <p><strong>small.en:</strong> Balanced option for most general-purpose transcription needs.</p>
+                    <p><strong>medium.en:</strong> High accuracy for important recordings and interviews.</p>
+                    <p><strong>large-v3:</strong> Best accuracy available, ideal for critical transcriptions.</p>
+
+                    <h3>💡 Tips</h3>
+                    <ul>
+                        <li>Start with tiny.en to test your setup and file compatibility</li>
+                        <li>Use medium.en or large-v3 for important transcriptions</li>
+                        <li>Clear audio with minimal background noise works best</li>
+                        <li>Files are processed locally - your audio never leaves this server</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io({
+            transports: ['websocket', 'polling'],
+            timeout: 300000, // 5 minutes
+            pingTimeout: 60000,
+            pingInterval: 25000
+        });
+        let currentJobId = null;
+        let pollInterval = null;
+
+        // Model information data
+        const modelInfo = {
+            'tiny.en': 'Size: ~75MB | Speed: ⚡⚡⚡⚡⚡ | Accuracy: ⭐☆☆☆☆',
+            'base.en': 'Size: ~142MB | Speed: ⚡⚡⚡⚡ | Accuracy: ⭐⭐☆☆☆',
+            'small.en': 'Size: ~466MB | Speed: ⚡⚡⚡ | Accuracy: ⭐⭐⭐☆☆',
+            'medium.en': 'Size: ~1.5GB | Speed: ⚡⚡ | Accuracy: ⭐⭐⭐⭐☆',
+            'large-v3': 'Size: ~3GB | Speed: ⚡ | Accuracy: ⭐⭐⭐⭐⭐'
+        };
+
+        // Tab switching
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Update model info
+        function updateModelInfo() {
+            const modelSelect = document.getElementById('model-select');
+            const modelInfoDiv = document.getElementById('model-info');
+            modelInfoDiv.textContent = modelInfo[modelSelect.value];
+        }
+
+        // Drag and drop functionality
+        const dropZone = document.getElementById('drop-zone');
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        // File selection handler
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        // Main file handling function
+        function handleFile(file) {
+            // Validate file type
+            const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/mp4', 'audio/x-m4a', 'video/mp4', 'video/quicktime', 'audio/ogg', 'audio/opus'];
+            const allowedExtensions = ['mp3', 'wav', 'm4a', 'mp4', 'mov', 'ogg', 'opus'];
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            
+            if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+                showError('File type not supported. Please use MP3, WAV, M4A, MP4, MOV, OGG, or OPUS files.');
+                return;
+            }
+
+            // Check file size (500MB limit)
+            if (file.size > 500 * 1024 * 1024) {
+                showError('File size too large. Maximum size is 500MB.');
+                return;
+            }
+
+            // Get form data
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('model', document.getElementById('model-select').value);
+            formData.append('language', document.getElementById('language-select').value);
+            formData.append('use_coreml', document.getElementById('use-coreml').checked);
+
+            // Get selected formats
+            const formats = [];
+            if (document.getElementById('format-txt').checked) formats.push('txt');
+            if (document.getElementById('format-srt').checked) formats.push('srt');
+            if (document.getElementById('format-vtt').checked) formats.push('vtt');
+
+            if (formats.length === 0) {
+                showError('Please select at least one output format.');
+                return;
+            }
+
+            formats.forEach(format => formData.append('formats', format));
+
+            // Show progress section
+            showProgress();
+            addLog(`Starting transcription of ${file.name}...`);
+
+            // Upload file and start transcription
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                currentJobId = data.job_id;
+                addLog(`File uploaded successfully. Job ID: ${data.job_id}`);
+                
+                // Start polling as backup in case WebSocket fails
+                setTimeout(() => {
+                    if (currentJobId === data.job_id) {
+                        startPollingJobStatus();
+                    }
+                }, 30000); // Start polling after 30 seconds
+            })
+            .catch(error => {
+                showError('Upload failed: ' + error.message);
+                hideProgress();
+            });
+        }
+
+        // Socket.IO event handlers
+        socket.on('transcription_progress', (data) => {
+            if (data.job_id === currentJobId) {
+                addLog(data.message);
+                
+                if (data.status === 'completed') {
+                    if (pollInterval) {
+                        clearInterval(pollInterval);
+                        pollInterval = null;
+                    }
+                    hideProgress();
+                    showResults(data.result);
+                } else if (data.status === 'failed') {
+                    if (pollInterval) {
+                        clearInterval(pollInterval);
+                        pollInterval = null;
+                    }
+                    hideProgress();
+                    showError(data.message);
+                }
+            }
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('WebSocket disconnected');
+            if (currentJobId) {
+                addLog('Connection lost, checking job status...');
+                startPollingJobStatus();
+            }
+        });
+        
+        socket.on('connect', () => {
+            console.log('WebSocket connected');
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+                addLog('Connection restored');
+            }
+        });
+
+        // UI helper functions
+        function showProgress() {
+            document.getElementById('progress-section').style.display = 'block';
+            document.getElementById('results-section').style.display = 'none';
+            clearLog();
+        }
+
+        function hideProgress() {
+            document.getElementById('progress-section').style.display = 'none';
+        }
+
+        function showResults(result) {
+            const resultsSection = document.getElementById('results-section');
+            const downloadGrid = document.getElementById('download-grid');
+            
+            // Clear previous results
+            downloadGrid.innerHTML = '';
+            
+            // Create download links
+            for (const [format, path] of Object.entries(result.outputs)) {
+                const link = document.createElement('a');
+                link.href = `/download/${currentJobId}/${format}`;
+                link.className = 'download-btn';
+                link.textContent = `Download ${format.toUpperCase()}`;
+                link.download = true;
+                downloadGrid.appendChild(link);
+            }
+            
+            resultsSection.style.display = 'block';
+        }
+
+        function addLog(message) {
+            const logArea = document.getElementById('log-area');
+            const timestamp = new Date().toLocaleTimeString();
+            logArea.textContent += `[${timestamp}] ${message}\n`;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log-area').textContent = '';
+        }
+
+        function showError(message) {
+            const progressSection = document.getElementById('progress-section');
+            let errorDiv = document.querySelector('.error-message');
+            
+            if (!errorDiv) {
+                errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                progressSection.appendChild(errorDiv);
+            }
+            
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        // Initialize
+        updateModelInfo();
+        
+        // Job status polling (backup for WebSocket failures)
+        function startPollingJobStatus() {
+            if (pollInterval || !currentJobId) return;
+            
+            addLog('Starting status polling...');
+            pollInterval = setInterval(() => {
+                fetch(`/job/${currentJobId}/status`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            console.error('Polling error:', data.error);
+                            return;
+                        }
+                        
+                        if (data.status === 'completed') {
+                            clearInterval(pollInterval);
+                            pollInterval = null;
+                            hideProgress();
+                            showResults(data.result);
+                            addLog('Transcription completed!');
+                        } else if (data.status === 'failed') {
+                            clearInterval(pollInterval);
+                            pollInterval = null;
+                            hideProgress();
+                            showError(data.error || 'Transcription failed');
+                        } else {
+                            addLog(`Status: ${data.status}`);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Polling request failed:', error);
+                    });
+            }, 5000); // Poll every 5 seconds
+        }
+    </script>
+</body>
+</html>

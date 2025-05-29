@@ -5,6 +5,8 @@ models/whisper_models/*
 !models/whisper_models/.gitkeep
 .venv/
 src/whisper
+bin/whisper
+models/whisper_models
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -149,3 +151,5 @@ test.wav
 .vscode/
 *.swp
 *.swo 
+/web/exports
+/web/uploads

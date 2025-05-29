@@ -13,7 +13,7 @@ WhisperTron lets you transcribe voice memos, interviews, podcasts and more - all
 - **🔒 Completely Local**: All processing happens on your machine - no data sent to any external service
 - **⚡ Apple Silicon Optimized**: Uses Metal and CoreML acceleration for much faster transcription on M1/M2/M3/M4 Macs
 - **📝 Multiple Output Formats**: Generates text (.txt), subtitles (.srt), and web subtitles (.vtt)
-- **🖱️ User-Friendly Interface**: Simple drag-and-drop interface for audio files
+- **🖱️ User-Friendly Interfaces**: Simple drag-and-drop GUI and web interface for audio files
 - **🧠 Model Selection**: Choose from various Whisper models (tiny.en through large-v3)
 - **📱 Voice Memo Compatible**: Works directly with iOS Voice Memos (.m4a files)
 - **⏱️ Timestamped Output**: Creates subtitles with accurate timestamps
@@ -49,18 +49,34 @@ WhisperTron lets you transcribe voice memos, interviews, podcasts and more - all
 
 3. Launch the application:
    ```bash
+   # Desktop GUI interface
    python whispertron.py
+   
+   # Or web interface
+   python whispertron-web.py
    ```
 
 ## 📖 Usage
 
-### GUI Interface
+### Desktop GUI Interface
 
 1. Launch WhisperTron: `python whispertron.py`
 2. Drag and drop audio files onto the application or use the "Browse Files" button
 3. Select your desired model and output formats
 4. Wait for transcription to complete
 5. Transcribed files will be saved in the "exports" directory with timestamp-based folders
+
+### Web Interface
+
+1. Launch the web interface: `python whispertron-web.py`
+2. Open your browser to `http://localhost:5001`
+3. Drag and drop audio files or click "Browse Files" to upload
+4. Configure transcription settings (model, language, output formats)
+5. Monitor progress in real-time with the live console output
+6. Download your transcribed files directly from the web interface
+7. Files are also saved locally in the "web/exports" directory
+
+The web interface provides the same powerful transcription capabilities as the desktop app but accessible through any modern web browser, making it perfect for remote access or when you prefer a browser-based workflow.
 
 ### Command Line Interface
 
@@ -106,10 +122,12 @@ cd whisper.cpp && ./models/download-ggml-model.sh MODEL_NAME
 ## 🗂️ Project Structure
 
 - `src/`: Core transcription engine with Python interface to whisper.cpp
-- `ui/`: PyQt6-based user interface
+- `ui/`: PyQt6-based desktop user interface
+- `web/`: Flask-based web interface with real-time progress tracking
 - `bin/`: Executable binaries
 - `models/`: Whisper model files location
-- `exports/`: Output directory for transcribed files
+- `exports/`: Output directory for transcribed files (desktop interface)
+- `web/exports/`: Output directory for web interface transcriptions
 - `whisper.cpp/`: C++ implementation of Whisper with Apple Silicon optimizations
 
 ## 🔧 Troubleshooting
@@ -118,6 +136,8 @@ cd whisper.cpp && ./models/download-ggml-model.sh MODEL_NAME
 - **"Model not found" error**: Make sure you've downloaded the model you're trying to use
 - **Performance issues**: Try a smaller model if transcription is too slow
 - **M4A format issues**: The app should automatically convert these, but if not, manually convert to WAV
+- **Web interface connection issues**: Check that port 5001 is available and not blocked by firewall
+- **Web transcription stuck**: The web interface includes automatic polling backup if WebSocket connection drops
 
 ## 👥 Contributing
 

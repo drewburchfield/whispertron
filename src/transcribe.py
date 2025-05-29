@@ -41,6 +41,9 @@ def transcribe_file(file_path, model="large-v3", language=None, task="transcribe
     output_dir = os.path.join("exports", f"{name_without_ext}_{timestamp}")
     os.makedirs(output_dir, exist_ok=True)
     
+    # Save current working directory
+    original_cwd = os.getcwd()
+    
     # Process m4a files - convert to wav first since whisper.cpp may not handle m4a well
     input_file = file_path
     temp_wav_path = None
@@ -77,11 +80,20 @@ def transcribe_file(file_path, model="large-v3", language=None, task="transcribe
     abs_output_file_base = os.path.abspath(output_file_base)
     abs_file_path = os.path.abspath(input_file)
     
-    # Build command
-    cmd = [os.path.abspath("bin/whisper")]
+    # Build command - ensure we use absolute paths relative to project root
+    # Check if we're in web/ subdirectory and adjust paths accordingly
+    if os.path.basename(os.getcwd()) == 'web':
+        # We're in the web directory, go up one level for whisper binary
+        whisper_binary = os.path.abspath("../bin/whisper")
+        model_path = os.path.abspath(f"../models/whisper_models/ggml-{model}.bin")
+    else:
+        # We're in the project root
+        whisper_binary = os.path.abspath("bin/whisper")
+        model_path = os.path.abspath(f"models/whisper_models/ggml-{model}.bin")
+    
+    cmd = [whisper_binary]
     
     # Add model
-    model_path = os.path.abspath(f"models/whisper_models/ggml-{model}.bin")
     cmd.extend(["-m", model_path])
     
     # Add input file
@@ -100,7 +112,10 @@ def transcribe_file(file_path, model="large-v3", language=None, task="transcribe
     
     # Add CoreML optimization if requested
     if use_coreml:
-        coreml_model = os.path.abspath(f"models/whisper_models/ggml-{model}-coreml.mlmodelc")
+        if os.path.basename(os.getcwd()) == 'web':
+            coreml_model = os.path.abspath(f"../models/whisper_models/ggml-{model}-coreml.mlmodelc")
+        else:
+            coreml_model = os.path.abspath(f"models/whisper_models/ggml-{model}-coreml.mlmodelc")
         if os.path.exists(coreml_model):
             cmd.extend(["--coreml", coreml_model])
     
@@ -115,15 +130,27 @@ def transcribe_file(file_path, model="large-v3", language=None, task="transcribe
     
     # Execute command
     print(f"Running transcription with command: {' '.join(cmd)}")
+    
+    # Ensure we have access to the whisper binary
+    if not os.path.exists(whisper_binary):
+        print(f"Error: Whisper binary not found at {whisper_binary}")
+        return None
+    
+    if not os.path.exists(model_path):
+        print(f"Error: Model not found at {model_path}")
+        return None
+    
     process = subprocess.run(cmd, capture_output=True, text=True)
     
     if process.returncode != 0:
         print(f"Error during transcription: {process.stderr}")
+        print(f"Command that failed: {' '.join(cmd)}")
         return None
     
     # Check console output
     print(f"STDOUT: {process.stdout}")
-    print(f"STDERR: {process.stderr}")
+    if process.stderr:
+        print(f"STDERR: {process.stderr}")
     
     # Return info about the transcription
     results = {
@@ -170,6 +197,21 @@ def transcribe_file(file_path, model="large-v3", language=None, task="transcribe
     if os.path.exists(output_dir):
         files = os.listdir(output_dir)
         print(f"Files in output directory: {files}")
+    
+    # Also check current directory for any leftover files
+    current_files = [f for f in os.listdir('.') if name_without_ext in f and any(f.endswith(f'.{fmt}') for fmt in output_formats)]
+    if current_files:
+        print(f"Found files in current directory: {current_files}")
+        for file in current_files:
+            target_path = os.path.join(output_dir, file)
+            shutil.move(file, target_path)
+            fmt = file.split('.')[-1]
+            if fmt in output_formats:
+                results["outputs"][fmt] = target_path
+                print(f"Moved {file} to {target_path}")
+    
+    # Restore original working directory
+    os.chdir(original_cwd)
     
     return results
 
