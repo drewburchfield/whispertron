@@ -5,7 +5,18 @@
 WhisperTron lets you transcribe voice memos, interviews, podcasts and more - all on your local machine with no data ever leaving your computer.
 
 <p align="center">
-  <img src="assets/images/whispertron-screenshot.png" alt="WhisperTron Screenshot" width="80%">
+  <table>
+    <tr>
+      <td align="center">
+        <img src="assets/images/whispertron-screenshot.png" alt="WhisperTron Desktop GUI" width="100%">
+        <br><b>Desktop GUI Interface</b>
+      </td>
+      <td align="center">
+        <img src="assets/images/whispertron-web-screenshot.png" alt="WhisperTron Web Interface" width="100%">
+        <br><b>Web Interface</b>
+      </td>
+    </tr>
+  </table>
 </p>
 
 ## ✨ Features
