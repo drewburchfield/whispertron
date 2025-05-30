@@ -8,11 +8,11 @@ WhisperTron lets you transcribe voice memos, interviews, podcasts and more - all
   <table>
     <tr>
       <td align="center">
-        <img src="assets/images/whispertron-screenshot.png" alt="WhisperTron Desktop GUI" width="100%">
+        <img src="assets/images/whispertron-screenshot.png" alt="WhisperTron Desktop GUI" width="450px">
         <br><b>Desktop GUI Interface</b>
       </td>
       <td align="center">
-        <img src="assets/images/whispertron-web-screenshot.png" alt="WhisperTron Web Interface" width="100%">
+        <img src="assets/images/whispertron-web-screenshot.png" alt="WhisperTron Web Interface" width="450px">
         <br><b>Web Interface</b>
       </td>
     </tr>
